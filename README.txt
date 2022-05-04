@@ -106,56 +106,67 @@ Contents:
     the TPM).
 
 
-    Command line options:                           Preconditions:
+    Command line options:                                                             Preconditions:
 
-    -a <data bytes>: Hash Sequence SHA-1            [u]
+    -a <hash algorithm> <data bytes>: Hash Sequence SHA-1/SHA-256                     [u]
 
-    -A <data bytes>: Hash Sequence SHA-256          [u]
+    -a <data bytes>: Hash Sequence SHA-1                                              [u]
 
-    -b <command bytes>: Enter your own TPM command  [u]
+    -A <data bytes>: Hash Sequence SHA-256                                            [u]
 
-    -c: Read Clock                                  [u]
+    -b <command bytes>: Enter your own TPM command                                    [u]
 
-    -d <shutdown type>: Shutdown                    [u]
+    -c: Read Clock                                                                    [u]
 
-    -e: PCR Extend SHA-1 <PCR index> <PCR digest>   [u]
+    -d <shutdown type>: Shutdown                                                      [u]
 
-    -E: PCR Extend SHA-256 <PCR index> <PCR digest> [u]
+    -e: PCR Extend SHA-1/SHA-256 <hash algorithm> <PCR index> <PCR digest>            [u]
 
-    -g: Get fixed capability values                 [u]
+    -e: PCR Extend SHA-1 <PCR index> <PCR digest>                                     [u]
 
-    -v: Get variable capability values              [u]
+    -E: PCR Extend SHA-256 <PCR index> <PCR digest>                                   [u]
 
-    -G <data length>: Get Random                    [u]
+    -g: Get fixed capability values                                                   [u]
 
-    -h: Help                                        [-]
+    -v: Get variable capability values                                                [u]
 
-    -r <PCR index>: PCR Read SHA-1                  [u]
+    -G <data length>: Get Random                                                      [u]
 
-    -R <PCR index>: PCR Read SHA-256                [u]
+    -h: Help                                                                          [-]
 
-    -s <data bytes>: Hash SHA-1                     [u]
+    -r <hash algorithm> <PCR index>: PCR Read SHA-1/SHA-256                           [u]
 
-    -S <data bytes>: Hash SHA-256                   [u]
+    -r <PCR index>: PCR Read SHA-1                                                    [u]
 
-    -t <test type>: Self Test                       [u]
+    -R <PCR index>: PCR Read SHA-256                                                  [u]
 
-    -T: Get Test Result                             [u]
+    -s <hash algorithm> <data bytes>: Hash SHA-1/SHA256                               [u]
 
-    -u <startup type>: Startup                      [-]
+    -s <data bytes>: Hash SHA-1                                                       [u]
 
-    -z <PCR index>: PCR Reset                       [u]
+    -S <data bytes>: Hash SHA-256                                                     [u]
+
+    -t <test type>: Self Test                                                         [u]
+
+    -T: Get Test Result                                                               [u]
+
+    -u <startup type>: Startup                                                        [-]
+
+    -z <PCR index>: PCR Reset                                                         [u]
 
 
     Additional information:
 
     -a:
-    With the "-a" command you can hash given data with the SHA-1 hash algorithm.
-    This hash sequence sends 3 commands [start, update, complete] to the TPM and
-    allows to hash an arbitrary amount of data.
+    With the "-a" command you can hash given data with the SHA-1/SHA-256 hash
+    algorithm. This hash sequence sends 3 commands [start, update, complete]
+    to the TPM and allows to hash an arbitrary amount of data.
     For example, use the following command to hash the byte sequence {0x41,
     0x62, 0x43, 0x64}:
-    ./eltt2 -a 41624364
+    ./eltt2 -a 41624364           Hash given data with SHA-1 hash algorithm.
+    or
+    ./eltt2 -a sha1 41624364      Hash given data with SHA-1 hash algorithm.
+    ./eltt2 -a sha256 41624364    Hash given data with SHA-256 hash algorithm.
 
     -A:
     With the "-A" command you can hash given data with the SHA-256 hash
@@ -185,16 +196,19 @@ Contents:
                         the TPM.
 
     -e:
-    With the "-e" command you can extend bytes in the selected PCR with SHA-1.
+    With the "-e" command you can extend bytes in the selected PCR with SHA-1/SHA-256.
     To do so, you have to enter the index of PCR in hexadecimal that you like to
     extend and the digest you want to extend the selected PCR with. Note that
     you can only extend PCRs with index 0 to 16 and PCR 23 and that the digest
-    must have a length of 20 bytes (will be padded with 0 if necessary).
-    The TPM then builds an SHA-1 hash over the PCR data in the selected PCR and
-    the digest you provided and writes the result back to the selected PCR.
+    must have a length of 20/32 bytes (will be padded with 0 if necessary).
+    The TPM then builds an SHA-1/SHA-256 hash over the PCR data in the selected PCR
+    and the digest you provided and writes the result back to the selected PCR.
     For example, use the following command to extend PCR 23 (0x17) with the byte
     sequence {0x41, 0x62, 0x43, 0x64, 0x00, ... (will be filled with 0x00)}:
-    ./eltt2 -e 17 41624364
+    ./eltt2 -e 17 41624364           Extend bytes in PCR 23 with SHA-1.
+    or
+    ./eltt2 -e sha1 17 41624364      Extend bytes in PCR 23 with SHA-1.
+    ./eltt2 -e sha256 17 41624364    Extend bytes in PCR 23 with SHA-256.
 
     -E:
     With the "-E" command you can extend bytes in the selected PCR with SHA-256.
@@ -221,9 +235,12 @@ Contents:
     ./eltt2 -G 14
 
     -r:
-    With the "-r" command you can read data from a selected SHA-1 PCR.
+    With the "-r" command you can read data from a selected SHA-1/SHA-256 PCR.
     For example, use the following command to read data from PCR 23 (0x17):
-    ./eltt2 -r 17
+    ./eltt2 -r 17           Read data from SHA-1 PCR 23.
+    or
+    ./eltt2 -r sha1 17      Read data from SHA-1 PCR 23.
+    ./eltt2 -r sha256 17    Read data from SHA-256 PCR 23.
 
     -R:
     With the "-R" command you can read data from a selected SHA-256 PCR.
@@ -231,12 +248,15 @@ Contents:
     ./eltt2 -R 17
 
     -s:
-    With the "-s" command you can hash given data with the SHA-1 hash algorithm.
-    This command only allows a limited amount of data to be hashed (depending on
-    the TPM's maximum input buffer size).
+    With the "-s" command you can hash given data with the SHA-1/SHA-256 hash
+    algorithm. This command only allows a limited amount of data to be hashed
+    (depending on the TPM's maximum input buffer size).
     For example, use the following command to hash the byte sequence {0x41,
     0x62, 0x43, 0x64}:
-    ./eltt2 -s 41624364
+    ./eltt2 -s 41624364         Hash given data with SHA-1 hash algorithm.
+    or
+    ./eltt2 -s sha1 41624364    Hash given data with SHA-1 hash algorithm.
+    ./eltt2 -s sha256 41624364  Hash given data with SHA-256 hash algorithm.
 
     -S:
     With the "-S" command you can hash given data with the SHA-256 hash
