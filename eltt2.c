@@ -724,11 +724,9 @@ static int print_response_buf(uint8_t *response_buf, size_t resp_size, uint32_t 
 
 static void print_help()
 {
-	printf("'-a <hash algorithm> <data bytes>': Hash Sequence SHA-1/SHA-256\n");
+	printf("'-a [hash algorithm] <data bytes>': Hash Sequence SHA-1/SHA-256 [default: SHA-1]\n");
 	printf("        -> Hash algorithm: Enter hash algorithm like 'sha1', 'sha256'\n");
 	printf("           Data bytes: Enter a byte sequence like '0F56...' for {0x0f, 0x56, ...}\n");
-	printf("'-a <data bytes>': Hash Sequence SHA-1\n");
-	printf("        -> Data bytes: Enter a byte sequence like '0F56...' for {0x0f, 0x56, ...}\n");
 	printf("'-A <data bytes>': Hash Sequence SHA-256\n");
 	printf("        -> Data bytes: Enter a byte sequence like '0F56...' for {0x0f, 0x56, ...}\n");
 	printf("'-b <command bytes>': Enter your own TPM command\n");
@@ -736,12 +734,9 @@ static void print_help()
 	printf("'-c': Read Clock\n");
 	printf("'-d <shutdown type>': Shutdown\n");
 	printf("        -> Shutdown types: clear [default], state\n");
-	printf("'-e <hash algorithm> <PCR index> <PCR digest>': PCR Extend SHA-1/SHA-256\n");
+	printf("'-e [hash algorithm] <PCR index> <PCR digest>': PCR Extend SHA-1/SHA-256 [default: SHA-1]\n");
 	printf("        -> Hash algorithm: Enter hash algorithm like 'sha1', 'sha256'\n");
 	printf("           PCR index:  Enter the PCR index in hex like '17' for 0x17\n");
-	printf("           PCR digest: Enter the value to extend the PCR with in hex like '0f56...' for {0x0f, 0x56, ...}\n");
-	printf("'-e <PCR index> <PCR digest>': PCR Extend SHA-1\n");
-	printf("        -> PCR index:  Enter the PCR index in hex like '17' for 0x17\n");
 	printf("           PCR digest: Enter the value to extend the PCR with in hex like '0f56...' for {0x0f, 0x56, ...}\n");
 	printf("'-E <PCR index> <PCR digest>': PCR Extend SHA-256\n");
 	printf("        -> PCR index:  Enter the PCR index in hex like '17' for 0x17\n");
@@ -751,18 +746,14 @@ static void print_help()
 	printf("'-G <byte count>': Get Random\n");
 	printf("        -> Enter desired number of random bytes in hex like '20' for 0x20 (=32 bytes, maximum)\n");
 	printf("'-h': Help\n");
-	printf("'-r <hash algorithm> <PCR index>': PCR Read SHA-1/SHA-256\n");
+	printf("'-r [hash algorithm] <PCR index>': PCR Read SHA-1/SHA-256 [default: SHA-1]\n");
 	printf("        -> Hash algorithm: Enter hash algorithm like 'sha1', 'sha256'\n");
 	printf("           PCR index: Enter PCR number in hex like '17' for 0x17\n");
-	printf("'-r <PCR index>': PCR Read SHA-1\n");
-	printf("        -> PCR index: Enter PCR number in hex like '17' for 0x17\n");
 	printf("'-R <PCR index>': PCR Read SHA-256\n");
 	printf("        -> PCR index: Enter PCR number in hex like '17' for 0x17\n");
-	printf("'-s <hash algorithm> <data bytes>': Hash SHA-1/SHA-256\n");
+	printf("'-s [hash algorithm] <data bytes>': Hash SHA-1/SHA-256 [default: SHA-1]\n");
 	printf("        -> Hash algorithm: Enter hash algorithm like 'sha1', 'sha256'\n");
 	printf("           Data bytes: Enter a byte sequence like '0F56...' for {0x0f, 0x56, ...}\n");
-	printf("'-s <data bytes>': Hash SHA-1\n");
-	printf("        -> Data bytes: Enter a byte sequence like '0F56...' for {0x0f, 0x56, ...}\n");
 	printf("'-S <data bytes>': Hash SHA-256\n");
 	printf("        -> Data bytes: Enter a byte sequence like '0F56...' for {0x0f, 0x56, ...}\n");
 	printf("'-t <selftest type>': SelfTest\n");

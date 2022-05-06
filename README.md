@@ -56,31 +56,27 @@ Some options require the TPM to be in a specific state. This state is shown in b
 
 To get the TPM into the required state, call ELTT2 with the corresponding commands ("x" for a state means that whether this state is required or not depends on the actual command or the command parameters sent eventually to the TPM).
 
- Command line option                                 | Explanation                    | Precondition
- ---                                                 | ---                            | ---
- -a \<hash algorithm\> \<data bytes\>                | Hash Sequence SHA-1/SHA-256    | \[u\]
- -a \<data bytes\>                                   | Hash Sequence SHA-1            | \[u\]
- -A \<data bytes\>                                   | Hash Sequence SHA-256          | \[u\]
- -b \<command bytes\>                                | Enter your own TPM command     | \[u\]
- -c                                                  | Read Clock                     | \[u\]
- -d \<shutdown type\>                                | Shutdown                       | \[u\]
- -e \<hash algorithm\> \<PCR index\> \<PCR digest\>  | PCR Extend SHA-1/SHA-256       | \[u\]
- -e \<PCR index\> \<PCR digest\>                     | PCR Extend SHA-1               | \[u\]
- -E \<PCR index\> \<PCR digest\>                     | PCR Extend SHA-256             | \[u\]
- -g                                                  | Get fixed capability values    | \[u\]
- -v                                                  | Get variable capability values | \[u\]
- -G \<data length\>                                  | Get Random                     | \[u\]
- -h                                                  | Help                           | \[-\]
- -r \<hash algorithm\> \<PCR index\>                 | PCR Read SHA-1/SHA-256         | \[u\]
- -r \<PCR index\>                                    | PCR Read SHA-1                 | \[u\]
- -R \<PCR index\>                                    | PCR Read SHA-256               | \[u\]
- -s \<hash algorithm\> \<data bytes\>                | Hash SHA-1/SHA-256             | \[u\]
- -s \<data bytes\>                                   | Hash SHA-1                     | \[u\]
- -S \<data bytes\>                                   | Hash SHA-256                   | \[u\]
- -t \<test type\>                                    | Self Test                      | \[u\]
- -T                                                  | Get Test Result                | \[u\]
- -u \<startup type\>                                 | Startup                        | \[-\]
- -z \<PCR index\>                                    | PCR Reset                      | \[u\]
+ Command line option                                 | Explanation                                       | Precondition
+ ---                                                 | ---                                               | ---
+ -a \[hash algorithm\] \<data bytes\>                | Hash Sequence SHA-1/SHA-256 \[default: SHA-1\]    | \[u\]
+ -A \<data bytes\>                                   | Hash Sequence SHA-256                             | \[u\]
+ -b \<command bytes\>                                | Enter your own TPM command                        | \[u\]
+ -c                                                  | Read Clock                                        | \[u\]
+ -d \<shutdown type\>                                | Shutdown                                          | \[u\]
+ -e \[hash algorithm\] \<PCR index\> \<PCR digest\>  | PCR Extend SHA-1/SHA-256 \[default: SHA-1\]       | \[u\]
+ -E \<PCR index\> \<PCR digest\>                     | PCR Extend SHA-256                                | \[u\]
+ -g                                                  | Get fixed capability values                       | \[u\]
+ -v                                                  | Get variable capability values                    | \[u\]
+ -G \<data length\>                                  | Get Random                                        | \[u\]
+ -h                                                  | Help                                              | \[-\]
+ -r \[hash algorithm\] \<PCR index\>                 | PCR Read SHA-1/SHA-256 \[default: SHA-1\]         | \[u\]
+ -R \<PCR index\>                                    | PCR Read SHA-256                                  | \[u\]
+ -s \[hash algorithm\] \<data bytes\>                | Hash SHA-1/SHA-256 \[default: SHA-1\]             | \[u\]
+ -S \<data bytes\>                                   | Hash SHA-256                                      | \[u\]
+ -t \<test type\>                                    | Self Test                                         | \[u\]
+ -T                                                  | Get Test Result                                   | \[u\]
+ -u \<startup type\>                                 | Startup                                           | \[-\]
+ -z \<PCR index\>                                    | PCR Reset                                         | \[u\]
 
 
  Additional information:

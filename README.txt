@@ -106,53 +106,45 @@ Contents:
     the TPM).
 
 
-    Command line options:                                                             Preconditions:
+    Command line options:                                                                          Preconditions:
 
-    -a <hash algorithm> <data bytes>: Hash Sequence SHA-1/SHA-256                     [u]
+    -a [hash algorithm] <data bytes>: Hash Sequence SHA-1/SHA-256 [default: SHA-1]                 [u]
 
-    -a <data bytes>: Hash Sequence SHA-1                                              [u]
+    -A <data bytes>: Hash Sequence SHA-256                                                         [u]
 
-    -A <data bytes>: Hash Sequence SHA-256                                            [u]
+    -b <command bytes>: Enter your own TPM command                                                 [u]
 
-    -b <command bytes>: Enter your own TPM command                                    [u]
+    -c: Read Clock                                                                                 [u]
 
-    -c: Read Clock                                                                    [u]
+    -d <shutdown type>: Shutdown                                                                   [u]
 
-    -d <shutdown type>: Shutdown                                                      [u]
+    -e [hash algorithm] <PCR index> <PCR digest>: PCR Extend SHA-1/SHA-256 [default: SHA-1]        [u]
 
-    -e: PCR Extend SHA-1/SHA-256 <hash algorithm> <PCR index> <PCR digest>            [u]
+    -E <PCR index> <PCR digest>: PCR Extend SHA-256                                                [u]
 
-    -e: PCR Extend SHA-1 <PCR index> <PCR digest>                                     [u]
+    -g: Get fixed capability values                                                                [u]
 
-    -E: PCR Extend SHA-256 <PCR index> <PCR digest>                                   [u]
+    -v: Get variable capability values                                                             [u]
 
-    -g: Get fixed capability values                                                   [u]
+    -G <data length>: Get Random                                                                   [u]
 
-    -v: Get variable capability values                                                [u]
+    -h: Help                                                                                       [-]
 
-    -G <data length>: Get Random                                                      [u]
+    -r [hash algorithm] <PCR index>: PCR Read SHA-1/SHA-256 [default: SHA-1]                       [u]
 
-    -h: Help                                                                          [-]
+    -R <PCR index>: PCR Read SHA-256                                                               [u]
 
-    -r <hash algorithm> <PCR index>: PCR Read SHA-1/SHA-256                           [u]
+    -s [hash algorithm] <data bytes>: Hash SHA-1/SHA256 [default: SHA-1]                           [u]
 
-    -r <PCR index>: PCR Read SHA-1                                                    [u]
+    -S <data bytes>: Hash SHA-256                                                                  [u]
 
-    -R <PCR index>: PCR Read SHA-256                                                  [u]
+    -t <test type>: Self Test                                                                      [u]
 
-    -s <hash algorithm> <data bytes>: Hash SHA-1/SHA256                               [u]
+    -T: Get Test Result                                                                            [u]
 
-    -s <data bytes>: Hash SHA-1                                                       [u]
+    -u <startup type>: Startup                                                                     [-]
 
-    -S <data bytes>: Hash SHA-256                                                     [u]
-
-    -t <test type>: Self Test                                                         [u]
-
-    -T: Get Test Result                                                               [u]
-
-    -u <startup type>: Startup                                                        [-]
-
-    -z <PCR index>: PCR Reset                                                         [u]
+    -z <PCR index>: PCR Reset                                                                      [u]
 
 
     Additional information:
