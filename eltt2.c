@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 	size_t input_bytes_size = 0;		// Size of input_bytes.
 	int no_transmission = 0;		// Flag to skip the transmission call, e.g. in case of command line option -h.
 	int tpm_error = 0;			// Flag to indicate whether a TPM response has returned a TPM error code or not.
-	hash_algo_enum hash_algo = ALG_NULL;	// Variable to indicate the selected hash algorithm.
+	crypto_algo_enum crypto_algo = ALG_NULL;	// Variable to indicate the selected cryptographic algorithm.
 
 	// ---------- Program flow ----------
 	printf("\n");
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
 		opterr = 0; // Disable getopt error messages in case of unknown parameters; we want to use our own error messages.
 
 		// Loop through parameters with getopt.
-		while (-1 != (option = getopt(argc, argv, "cgvhTa:A:b:d:e:E:G:l:r:R:s:S:t:u:z:")))
+		while (-1 != (option = getopt(argc, argv, "cgvhTa:A:b:d:e:E:G:i:l:r:R:s:S:t:u:z:")))
 		{
 			switch (option)
 			{
@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 				case 'A': // TPM2_HashSequenceStart SHA-256
 					HASH_ALG_PARSER('a', 3);
 
-					ret_val = create_hash_sequence(optarg, hash_algo, tpm_response_buf, &tpm_response_buf_size);
+					ret_val = create_hash_sequence(optarg, crypto_algo, tpm_response_buf, &tpm_response_buf_size);
 					break;
 
 				case 'b': // Enter your own command bytes
@@ -143,11 +143,11 @@ int main(int argc, char **argv)
 					HASH_ALG_PARSER('e', 4);
 
 					// Allocate the input buffer for pcr_extend and tpmtool_transmit.
-					if (ALG_SHA1 == hash_algo)
+					if (ALG_SHA1 == crypto_algo)
 					{
 						input_bytes_size = sizeof(tpm2_pcr_extend) + TPM_SHA1_DIGEST_SIZE;
 					}
-					else if (ALG_SHA256 == hash_algo)
+					else if (ALG_SHA256 == crypto_algo)
 					{
 						input_bytes_size = sizeof(tpm2_pcr_extend) + TPM_SHA256_DIGEST_SIZE;
 					}
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 					memset(input_bytes, 0, input_bytes_size);
 
 					// Create PCR_Extend TPM request.
-					ret_val = pcr_extend(optarg, argv[optind], input_bytes, input_bytes_size, hash_algo);
+					ret_val = pcr_extend(optarg, argv[optind], input_bytes, input_bytes_size, crypto_algo);
 
 					// Set the argument count to the next option for error handling.
 					optind++;
@@ -200,6 +200,23 @@ int main(int argc, char **argv)
 					no_transmission = 1;
 					break;
 
+				case 'i': // TPM2_EncryptDecrypt2
+					AES_ALG_PARSER(3);
+
+					// Allocate the input buffer for create_encryptdecrypt2 and tpmtool_transmit.
+					input_bytes_size = strlen(optarg) / HEX_BYTE_STRING_LENGTH + strlen(optarg) % HEX_BYTE_STRING_LENGTH + sizeof(tpm2_encryptdecrypt2);
+					input_bytes = malloc(input_bytes_size);
+					MALLOC_ERROR_CHECK(input_bytes);
+					memset(input_bytes, 0, input_bytes_size);
+
+					// Create Hash TPM request.
+					ret_val = create_encryptdecrypt2(optarg, crypto_algo, input_bytes, input_bytes_size);
+					RET_VAL_CHECK(ret_val);
+
+					// Send bytes to TPM.
+					ret_val = tpmtool_transmit(input_bytes, input_bytes_size, tpm_response_buf, &tpm_response_buf_size);
+					break;
+
 				case 'l': // PCR_Allocate SHA-1/256/384
 					HASH_ALG_PARSER('l', -1);
 
@@ -210,7 +227,7 @@ int main(int argc, char **argv)
 					memset(input_bytes, 0, input_bytes_size);
 
 					// Create PCR_Allocate TPM request.
-					ret_val = pcr_allocate(input_bytes, hash_algo);
+					ret_val = pcr_allocate(input_bytes, crypto_algo);
 					RET_VAL_CHECK(ret_val);
 
 					// Send bytes to TPM.
@@ -228,7 +245,7 @@ int main(int argc, char **argv)
 					memset(input_bytes, 0, input_bytes_size);
 
 					// Create PCR_Read TPM request.
-					ret_val = pcr_read(optarg, input_bytes, hash_algo);
+					ret_val = pcr_read(optarg, input_bytes, crypto_algo);
 					RET_VAL_CHECK(ret_val);
 
 					// Send bytes to TPM.
@@ -246,7 +263,7 @@ int main(int argc, char **argv)
 					memset(input_bytes, 0, input_bytes_size);
 
 					// Create Hash TPM request.
-					ret_val = create_hash(optarg, hash_algo, input_bytes, input_bytes_size);
+					ret_val = create_hash(optarg, crypto_algo, input_bytes, input_bytes_size);
 					RET_VAL_CHECK(ret_val);
 
 					// Send bytes to TPM.
@@ -1244,7 +1261,7 @@ static int get_random(char *data_length_string, uint8_t *response_buf)
 	return ret_val;
 }
 
-static int create_hash(char *data_string, hash_algo_enum hash_algo, uint8_t *hash_cmd_buf, uint32_t hash_cmd_buf_size)
+static int create_hash(char *data_string, crypto_algo_enum crypto_algo, uint8_t *hash_cmd_buf, uint32_t hash_cmd_buf_size)
 {
 	int ret_val = EXIT_SUCCESS;		// Return value.
 	uint32_t offset = 0;			// Helper offset for generating command request.
@@ -1288,12 +1305,12 @@ static int create_hash(char *data_string, hash_algo_enum hash_algo, uint8_t *has
 		memcpy(hash_cmd_buf, tpm2_hash, sizeof(tpm2_hash));
 
 		// Set hash algorithm, command and data sizes depending on user input option at the correct byte index in the command byte stream.
-		if (ALG_SHA1 == hash_algo)
+		if (ALG_SHA1 == crypto_algo)
 		{
 			tpm_hash_alg = sha1_alg;
 			printf("\nTPM2_Hash of '%s' with SHA-1:\n", data_string);
 		}
-		else if (ALG_SHA256 == hash_algo)
+		else if (ALG_SHA256 == crypto_algo)
 		{
 			tpm_hash_alg = sha256_alg;
 			printf("\nTPM2_Hash of '%s' with SHA-256:\n", data_string);
@@ -1326,7 +1343,7 @@ static int create_hash(char *data_string, hash_algo_enum hash_algo, uint8_t *has
 	return ret_val;
 }
 
-static int create_hash_sequence(char *data_string, hash_algo_enum hash_algo, uint8_t *tpm_response_buf, ssize_t *tpm_response_buf_size)
+static int create_hash_sequence(char *data_string, crypto_algo_enum crypto_algo, uint8_t *tpm_response_buf, ssize_t *tpm_response_buf_size)
 {
 	int ret_val = EXIT_SUCCESS;		// Return value.
 	uint16_t data_string_bytes_size = 0;	// Size of user input data string in bytes.
@@ -1367,12 +1384,12 @@ static int create_hash_sequence(char *data_string, hash_algo_enum hash_algo, uin
 		original_response_buf_size = *tpm_response_buf_size;
 
 		// Set hash algorithm depending on user input option at the correct byte index in the command byte stream.
-		if (ALG_SHA1 == hash_algo)
+		if (ALG_SHA1 == crypto_algo)
 		{
 			printf("\nTPM2_HashSequenceStart of '%s' with SHA-1:\n", data_string);
 			memcpy(tpm2_hash_sequence_start + 12, sha1_alg, sizeof(sha1_alg));
 		}
-		else if (ALG_SHA256 == hash_algo)
+		else if (ALG_SHA256 == crypto_algo)
 		{
 			printf("\nTPM2_HashSequenceStart of '%s' with SHA-256:\n", data_string);
 			memcpy(tpm2_hash_sequence_start + 12, sha256_alg, sizeof(sha256_alg));
@@ -1496,7 +1513,7 @@ static int create_hash_sequence(char *data_string, hash_algo_enum hash_algo, uin
 	return ret_val;
 }
 
-static int pcr_extend(char *pcr_index_str, char *pcr_digest_str, uint8_t *pcr_cmd_buf, size_t pcr_cmd_buf_size, hash_algo_enum hash_algo)
+static int pcr_extend(char *pcr_index_str, char *pcr_digest_str, uint8_t *pcr_cmd_buf, size_t pcr_cmd_buf_size, crypto_algo_enum crypto_algo)
 {
 	int ret_val = EXIT_SUCCESS;	// Return value.
 	uint8_t pcr_index = 0;		// PCR index user input byte.
@@ -1541,19 +1558,19 @@ static int pcr_extend(char *pcr_index_str, char *pcr_digest_str, uint8_t *pcr_cm
 
 		// Check the command line input (PCR digest).
 		pcr_digest_size = strlen(pcr_digest_str) / HEX_BYTE_STRING_LENGTH + strlen(pcr_digest_str) % HEX_BYTE_STRING_LENGTH;
-		if (ALG_SHA1 == hash_algo && TPM_SHA1_DIGEST_SIZE < pcr_digest_size)
+		if (ALG_SHA1 == crypto_algo && TPM_SHA1_DIGEST_SIZE < pcr_digest_size)
 		{
 			ret_val = ERR_BAD_CMD;
 			fprintf(stderr, "Bad option. Maximum SHA-1 PCR digest size is 20 byte (40 characters), but you entered %u byte.\n", pcr_digest_size);
 			break;
 		}
-		if (ALG_SHA256 == hash_algo && TPM_SHA256_DIGEST_SIZE < pcr_digest_size)
+		if (ALG_SHA256 == crypto_algo && TPM_SHA256_DIGEST_SIZE < pcr_digest_size)
 		{
 			ret_val = ERR_BAD_CMD;
 			fprintf(stderr, "Bad option. Maximum SHA-256 PCR digest size is 32 byte (64 characters), but you entered %u byte.\n", pcr_digest_size);
 			break;
 		}
-		if (ALG_SHA384 == hash_algo && TPM_SHA384_DIGEST_SIZE < pcr_digest_size)
+		if (ALG_SHA384 == crypto_algo && TPM_SHA384_DIGEST_SIZE < pcr_digest_size)
 		{
 			ret_val = ERR_BAD_CMD;
 			fprintf(stderr, "Bad option. Maximum SHA-384 PCR digest size is 48 byte (96 characters), but you entered %u byte.\n", pcr_digest_size);
@@ -1571,19 +1588,19 @@ static int pcr_extend(char *pcr_index_str, char *pcr_digest_str, uint8_t *pcr_cm
 		RET_VAL_CHECK(ret_val);
 
 		// Set hash algorithm and command length depending on user input option at the correct byte index in the command byte stream.
-		if (ALG_SHA1 == hash_algo)
+		if (ALG_SHA1 == crypto_algo)
 		{
 			pcr_cmd_buf[5] = sizeof(tpm2_pcr_extend) + TPM_SHA1_DIGEST_SIZE;
 			memcpy(pcr_cmd_buf + 31, sha1_alg, sizeof(sha1_alg));
 			printf("Extend PCR %i (SHA-1) with digest { ", pcr_index);
 		}
-		else if (ALG_SHA256 == hash_algo)
+		else if (ALG_SHA256 == crypto_algo)
 		{
 			pcr_cmd_buf[5] = sizeof(tpm2_pcr_extend) + TPM_SHA256_DIGEST_SIZE;
 			memcpy(pcr_cmd_buf + 31, sha256_alg, sizeof(sha256_alg));
 			printf("Extend PCR %i (SHA-256) with digest { ", pcr_index);
 		}
-		else if (ALG_SHA384 == hash_algo)
+		else if (ALG_SHA384 == crypto_algo)
 		{
 			pcr_cmd_buf[5] = sizeof(tpm2_pcr_extend) + TPM_SHA384_DIGEST_SIZE;
 			memcpy(pcr_cmd_buf + 31, sha384_alg, sizeof(sha384_alg));
@@ -1596,7 +1613,7 @@ static int pcr_extend(char *pcr_index_str, char *pcr_digest_str, uint8_t *pcr_cm
 	return ret_val;
 }
 
-static int pcr_allocate(uint8_t *pcr_cmd_buf, hash_algo_enum hash_algo)
+static int pcr_allocate(uint8_t *pcr_cmd_buf, crypto_algo_enum crypto_algo)
 {
 	int ret_val = EXIT_SUCCESS;	// Return value.
 	unsigned char set[] = {0xFF, 0xFF, 0xFF};
@@ -1610,21 +1627,21 @@ static int pcr_allocate(uint8_t *pcr_cmd_buf, hash_algo_enum hash_algo)
 		memcpy(pcr_cmd_buf, tpm2_pcr_allocate, sizeof(tpm2_pcr_allocate));
 
 		// Set hash algorithm depending on user input option at the correct byte index in the command byte stream.
-		if (ALG_SHA1 == hash_algo)
+		if (ALG_SHA1 == crypto_algo)
 		{
 			memcpy(pcr_cmd_buf + 34, set, sizeof(set));
 			memcpy(pcr_cmd_buf + 40, clear, sizeof(clear));
 			memcpy(pcr_cmd_buf + 46, clear, sizeof(clear));
 			printf("PCR allocate SHA-1 bank\n");
 		}
-		else if (ALG_SHA256 == hash_algo)
+		else if (ALG_SHA256 == crypto_algo)
 		{
 			memcpy(pcr_cmd_buf + 34, clear, sizeof(clear));
 			memcpy(pcr_cmd_buf + 40, set, sizeof(set));
 			memcpy(pcr_cmd_buf + 46, clear, sizeof(clear));
 			printf("PCR allocate SHA-256 bank\n");
 		}
-		else if (ALG_SHA384 == hash_algo)
+		else if (ALG_SHA384 == crypto_algo)
 		{
 			memcpy(pcr_cmd_buf + 34, clear, sizeof(clear));
 			memcpy(pcr_cmd_buf + 40, clear, sizeof(clear));
@@ -1636,7 +1653,7 @@ static int pcr_allocate(uint8_t *pcr_cmd_buf, hash_algo_enum hash_algo)
 	return ret_val;
 }
 
-static int pcr_read(char *pcr_index_str, uint8_t *pcr_cmd_buf, hash_algo_enum hash_algo)
+static int pcr_read(char *pcr_index_str, uint8_t *pcr_cmd_buf, crypto_algo_enum crypto_algo)
 {
 	int ret_val = EXIT_SUCCESS;	// Return value.
 	int pcr_byte_index = 0;		// The location for pcr_select on pcr_cmd_buf.
@@ -1681,17 +1698,17 @@ static int pcr_read(char *pcr_index_str, uint8_t *pcr_cmd_buf, hash_algo_enum ha
 		pcr_cmd_buf[17 + pcr_byte_index] = pcr_select;
 
 		// Set hash algorithm depending on user input option at the correct byte index in the command byte stream.
-		if (ALG_SHA1 == hash_algo)
+		if (ALG_SHA1 == crypto_algo)
 		{
 			memcpy(pcr_cmd_buf + 14, sha1_alg, sizeof(sha1_alg));
 			printf("Read PCR %i (SHA-1):\n", pcr_index);
 		}
-		else if (ALG_SHA256 == hash_algo)
+		else if (ALG_SHA256 == crypto_algo)
 		{
 			memcpy(pcr_cmd_buf + 14, sha256_alg, sizeof(sha256_alg));
 			printf("Read PCR %i (SHA-256):\n", pcr_index);
 		}
-		else if (ALG_SHA384 == hash_algo)
+		else if (ALG_SHA384 == crypto_algo)
 		{
 			memcpy(pcr_cmd_buf + 14, sha384_alg, sizeof(sha384_alg));
 			printf("Read PCR %i (SHA-384):\n", pcr_index);
@@ -1736,6 +1753,79 @@ static int pcr_reset(char *pcr_index_str, uint8_t *pcr_cmd_buf)
 		pcr_cmd_buf[13] = pcr_index;
 
 		printf("Reset PCR %i (SHA-1, SHA-256, and SHA-384):\n", pcr_index);
+	} while (0);
+
+	return ret_val;
+}
+
+static int create_encryptdecrypt2(char *data_string, crypto_algo_enum crypto_algo, uint8_t *cmd_buf, uint32_t cmd_buf_size)
+{
+	const int auth_field_size = 13;
+	const int handle_area_size = 4;
+	int ret_val = EXIT_SUCCESS;		// Return value.
+	uint32_t offset = 0;			// Helper offset for generating command request.
+	uint16_t data_string_size = 0;		// Size of user input data.
+
+	do
+	{
+		NULL_POINTER_CHECK(data_string);
+		NULL_POINTER_CHECK(cmd_buf);
+
+		if (TPM_REQ_MAX_SIZE < cmd_buf_size)
+		{
+			ret_val = EINVAL;
+			fprintf(stderr, "Bad parameter. Value of parameter 'cmd_buf_size' must be smaller or equal to %u.\n", TPM_REQ_MAX_SIZE);
+			break;
+		}
+		if (sizeof(tpm2_encryptdecrypt2) > cmd_buf_size)
+		{
+			ret_val = EINVAL;
+			fprintf(stderr, "Bad parameter. Value of parameter 'cmd_buf_size' must be at least %zu.\n", sizeof(tpm2_encryptdecrypt2));
+			break;
+		}
+		data_string_size = strlen(data_string) / HEX_BYTE_STRING_LENGTH + strlen(data_string) % HEX_BYTE_STRING_LENGTH;
+		if (0 == data_string_size)
+		{
+			ret_val = EINVAL;
+			fprintf(stderr, "Bad parameter. data_string is empty.\n");
+			break;
+		}
+		if (cmd_buf_size - sizeof(tpm2_encryptdecrypt2) < data_string_size)
+		{
+			ret_val = EINVAL;
+			fprintf(stderr, "Bad parameter. Input data size must be smaller or equal to %zu.\n", cmd_buf_size - sizeof(tpm2_encryptdecrypt2));
+			break;
+		}
+
+		memset(cmd_buf, 0, cmd_buf_size);
+
+		// Copy basic command bytes.
+		memcpy(cmd_buf, tpm2_encryptdecrypt2, sizeof(tpm2_encryptdecrypt2));
+
+		offset = TPM_CMD_SIZE_OFFSET;
+		ret_val = int_to_bytearray(sizeof(tpm2_encryptdecrypt2) + data_string_size, sizeof(uint32_t), cmd_buf + offset);
+		RET_VAL_CHECK(ret_val);
+		offset = TPM_CMD_HEADER_SIZE + handle_area_size + auth_field_size;
+		ret_val = int_to_bytearray(data_string_size, sizeof(data_string_size), cmd_buf + offset);
+		RET_VAL_CHECK(ret_val);
+		offset += sizeof(data_string_size);
+
+		// Copy data to TPM request.
+		ret_val = hexstr_to_bytearray(data_string, cmd_buf + offset, cmd_buf_size - offset);
+		RET_VAL_CHECK(ret_val);
+		offset += data_string_size;
+
+		// Copy the rest from the template.
+		memcpy(cmd_buf + offset, tpm2_encryptdecrypt2 + TPM_CMD_HEADER_SIZE + handle_area_size + auth_field_size + 2, \
+			sizeof(tpm2_encryptdecrypt2) - TPM_CMD_HEADER_SIZE - handle_area_size - auth_field_size - 2);
+{
+int i = 0;
+printf("WENXIN1\n");
+for (;i<cmd_buf_size;i++)
+printf("%02x", cmd_buf[i]);
+printf("\n");
+}
+
 	} while (0);
 
 	return ret_val;

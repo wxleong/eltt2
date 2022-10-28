@@ -54,6 +54,7 @@ Some options require the TPM to be in a specific state. This state is shown in b
 
 \[-\]: none <br>
 \[\*\]: the TPM platform hierarchy authorization value is not set (i.e., empty buffer) <br>
+\[c\]: the required key is created with no authorization value set (i.e., empty buffer) and made persistent at handle 0x81000001 <br>
 \[l\]: the required PCR bank is allocated <br>
 \[u\]: started <br>
 
@@ -72,6 +73,7 @@ To get the TPM into the required state, call ELTT2 with the corresponding comman
  `-v`                                                | Get variable capability values                    | \[u\]
  `-G <data length>`                                  | Get Random                                        | \[u\]
  `-h`                                                | Help                                              | \[-\]
+ `-i [AES algorithm] <data bytes>`                   | AES-128/192/256 \[default: AES-128\]              | \[u\], \[c\]
  `-l <hash algorithm>`                               | PCR Allocate SHA-1/256/384                        | \[u\], \[\*\]
  `-r [hash algorithm] <PCR index>`                   | PCR Read SHA-1/256/384 \[default: SHA-1\]         | \[u\], \[l\]
  `-R <PCR index>`                                    | PCR Read SHA-256                                  | \[u\], \[l\]

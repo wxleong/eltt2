@@ -74,8 +74,8 @@
 #include <inttypes.h>
 
 //-------------"Defines"-------------
-#define TPM_RESP_MAX_SIZE		4096	///< This is the maximum possible TPM response size in bytes.
-#define TPM_REQ_MAX_SIZE		1024	///< This is the maximum possible TPM request size in bytes. TBD: Find out correct value.
+#define TPM_RESP_MAX_SIZE		2000	///< This is the maximum possible TPM response size in bytes. TPM2_PT_MAX_RESPONSE_SIZE
+#define TPM_REQ_MAX_SIZE		2000	///< This is the maximum possible TPM request size in bytes. TBD: Find out correct value. TPM2_PT_MAX_COMMAND_SIZE
 #define ERR_COMMUNICATION		-1	///< Return error check for read and write to the TPM.
 #define ERR_BAD_CMD			-2	///< Error code for a bad command line argument or option.
 #define TPM_SHA1_DIGEST_SIZE		20	///< For all SHA-1 operations the digest's size is always 20 bytes.
@@ -124,6 +124,40 @@
 #define MEMSET_FREE(x, y) if (NULL != x) { memset(x, 0, y); free(x); x = NULL; } ///< Sets memory to 0, frees memory and sets pointer to NULL.
 // Return value check
 #define RET_VAL_CHECK(x) if (EXIT_SUCCESS != x) { break; } ///< Return value check
+// Command line option parser for AES algorithm
+#define AES_ALG_PARSER(c) \
+	do { \
+		if (c == argc) \
+		{ \
+			crypto_algo = ALG_AES128; \
+		} \
+		else \
+		{ \
+			if (0 == strcasecmp(optarg, "aes128")) \
+			{ \
+				crypto_algo = ALG_AES128; \
+			} \
+			else if (0 == strcasecmp(optarg, "aes192")) \
+			{ \
+				crypto_algo = ALG_AES192; \
+			} \
+			else if (0 == strcasecmp(optarg, "aes256")) \
+			{ \
+				crypto_algo = ALG_AES256; \
+			} \
+			else \
+			{ \
+				ret_val = ERR_BAD_CMD; \
+				fprintf(stderr, "Unknown option. Use '-h' for more information.\n"); \
+				break; \
+			} \
+			if (argc > optind) \
+			{ \
+				optarg = argv[optind++]; \
+			} \
+		} \
+	} while (0)
+
 // Command line option parser for hash algorithm
 #define HASH_ALG_PARSER(o, c) \
 	do { \
@@ -131,21 +165,21 @@
 		{ \
 			if (c == argc) \
 			{ \
-				hash_algo = ALG_SHA1; \
+				crypto_algo = ALG_SHA1; \
 			} \
 			else \
 			{ \
 				if (0 == strcasecmp(optarg, "sha1")) \
 				{ \
-					hash_algo = ALG_SHA1; \
+					crypto_algo = ALG_SHA1; \
 				} \
 				else if (0 == strcasecmp(optarg, "sha256")) \
 				{ \
-					hash_algo = ALG_SHA256; \
+					crypto_algo = ALG_SHA256; \
 				} \
 				else if (0 == strcasecmp(optarg, "sha384")) \
 				{ \
-					hash_algo = ALG_SHA384; \
+					crypto_algo = ALG_SHA384; \
 				} \
 				else \
 				{ \
@@ -161,19 +195,22 @@
 		} \
 		else \
 		{ \
-			hash_algo = ALG_SHA256; \
+			crypto_algo = ALG_SHA256; \
 		} \
 	} while (0)
 
 //--------------"Enums"--------------
-// Hash algorithms
-typedef enum hash_algo_enum
+// Cryptographic algorithms
+typedef enum crypto_algo_enum
 {
 	ALG_NULL,
 	ALG_SHA1,
 	ALG_SHA256,
 	ALG_SHA384,
-} hash_algo_enum;
+	ALG_AES128,
+	ALG_AES192,
+	ALG_AES256,
+} crypto_algo_enum;
 
 //-------------"Methods"-------------
 /**
@@ -233,7 +270,7 @@ static int int_to_bytearray(uint64_t input, uint32_t input_size, uint8_t *output
   * @retval	hexstr_to_bytearray		All error codes from hexstr_to_bytearray.
   * @date	2014/06/26
   */
-static int pcr_extend(char *pcr_index_str, char *pcr_digest_str, uint8_t *pcr_cmd_buf, size_t pcr_cmd_buf_size, hash_algo_enum hash_algo);
+static int pcr_extend(char *pcr_index_str, char *pcr_digest_str, uint8_t *pcr_cmd_buf, size_t pcr_cmd_buf_size, crypto_algo_enum hash_algo);
 
 /**
   * @brief	Create the PCR_Allocate command.
@@ -245,7 +282,7 @@ static int pcr_extend(char *pcr_index_str, char *pcr_digest_str, uint8_t *pcr_cm
   * @retval	EXIT_SUCCESS			In case of success.
   * @date	2022/05/09
   */
-static int pcr_allocate(uint8_t *pcr_cmd_buf, hash_algo_enum hash_algo);
+static int pcr_allocate(uint8_t *pcr_cmd_buf, crypto_algo_enum hash_algo);
 
 /**
   * @brief	Create the PCR_Read command.
@@ -260,7 +297,7 @@ static int pcr_allocate(uint8_t *pcr_cmd_buf, hash_algo_enum hash_algo);
   * @retval	hexstr_to_bytearray		All error codes from hexstr_to_bytearray.
   * @date	2014/06/26
   */
-static int pcr_read(char *pcr_index_str, uint8_t *pcr_cmd_buf, hash_algo_enum hash_algo);
+static int pcr_read(char *pcr_index_str, uint8_t *pcr_cmd_buf, crypto_algo_enum hash_algo);
 
 /**
   * @brief	Create the PCR_Reset command.
@@ -389,7 +426,7 @@ static int get_random(char *data_length_string, uint8_t *response_buf);
   * @retval	int_to_bytearray		All error codes from int_to_bytearray.
   * @date	2014/06/26
   */
-static int create_hash(char *data_string, hash_algo_enum hash_algo, uint8_t *hash_cmd_buf, uint32_t hash_cmd_buf_size);
+static int create_hash(char *data_string, crypto_algo_enum hash_algo, uint8_t *hash_cmd_buf, uint32_t hash_cmd_buf_size);
 
 /**
   * @brief	Create and transmit a sequence of TPM commands for hashing larger amounts of data.
@@ -409,7 +446,23 @@ static int create_hash(char *data_string, hash_algo_enum hash_algo, uint8_t *has
   * @retval	print_response_buf		All error codes from print_response_buf
   * @date	2014/06/26
   */
-static int create_hash_sequence(char *data_string, hash_algo_enum hash_algo, uint8_t *tpm_response_buf, ssize_t *tpm_response_buf_size);
+static int create_hash_sequence(char *data_string, crypto_algo_enum hash_algo, uint8_t *tpm_response_buf, ssize_t *tpm_response_buf_size);
+
+/**
+  * @brief	Create the simple hash command.
+  * @param	[in]	*data_string		User input string of data to be hashed.
+  * @param	[in]	hash_algo		Set to ALG_SHA1 for hashing with SHA-1,
+						ALG_SHA256 for SHA-256, and ALG_SHA384 for SHA-384.
+  * @param	[out]	*hash_cmd_buf		Return buffer for the complete command.
+  * @param	[in]	hash_cmd_buf_size	Return buffer size.
+  * @return	One of the listed return codes.
+  * @retval	EINVAL				In case of a NULL pointer.
+  * @retval	EXIT_SUCCESS			In case of success.
+  * @retval	hexstr_to_bytearray		All error codes from hexstr_to_bytearray.
+  * @retval	int_to_bytearray		All error codes from int_to_bytearray.
+  * @date	2014/06/26
+  */
+static int create_encryptdecrypt2(char *data_string, crypto_algo_enum crypto_algo, uint8_t *cmd_buf, uint32_t cmd_buf_size);
 
 //-------------"command bytes"-------------
 static const uint8_t tpm2_startup_clear[] = {
@@ -629,6 +682,28 @@ static const uint8_t tpm2_pcr_reset[] = {
 	0x00, 0x09,			// authSize (password authorization session)
 	0x40, 0x00, 0x00, 0x09,		// TPM_RS_PW (indicate a password authorization session)
 	0x00, 0x00, 0x01, 0x00, 0x00
+};
+
+// TPM2_EncryptDecrypt2
+static const uint8_t tpm2_encryptdecrypt2[] = {
+	0x80, 0x02,			// TPM_ST_SESSIONS
+	0x00, 0x00, 0x00, 0x00,		// commandSize (will be set later)
+	0x00, 0x00, 0x01, 0x93,		// TPM_CC_EncryptDecrypt2
+	0x81, 0x00, 0x00, 0x01,		// TPMI_DH_OBJECT
+	0x00, 0x00,			// authSize (NULL Password)
+					// null (indicate a NULL Password)
+	0x00, 0x09,			// authSize (password authorization session)
+	0x40, 0x00, 0x00, 0x09,		// TPM_RS_PW (indicate a password authorization session)
+	0x00, 0x00, 0x01, 0x00, 0x00,
+	0x00, 0x00,			// TPM2B_MAX_BUFFER.size (will be set later)
+					// TPM2B_MAX_BUFFER.buffer (will be added later)
+	0x00,				// TPMI_YES_NO (set to 0x00 for encryption, 0x01 for decryption)
+	0x00, 0x10,			// TPMI_ALG_CIPHER_MODE, this field shall match the default mode of the key or be TPM_ALG_NULL
+	0x00, 0x10,			// TPM2B_IV.size (will be set later)
+	0x00, 0x00, 0x00, 0x00,		// TPM2B_IV.buffer (will be added later)
+	0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00
 };
 
 #endif /* _ELTT2_H_ */
